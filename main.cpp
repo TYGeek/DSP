@@ -5,60 +5,65 @@
 
 namespace plt = matplotlibcpp;
 
+double continuousSignal(double t, double f0, double f1)
+{
+    // x(t) = sin( 2*Pi * f0 * t ) + 0.5*sin( 2*Pi * f1 * t + 3*Pi/4 );
+    return generateContinuousSignal(t, f0) + generateContinuousSignal(t,f1,0.5,3*Pi/4);
+}
+
+double continuousTimeSignal(double t)
+{
+    // x(t) = sin( 2*Pi * f0 * t ) + 0.5*sin( 2*Pi * f1 * t + 3*Pi/4 );
+    return sin( 2*Pi * 1000 * t ) + 0.5*sin( 2*Pi * 2000 * t + 3*Pi/4 );
+}
+
+double DFTRectangular(int m, Vec const& x)
+{
+    double X_DFT = 0.0;
+    size_t N = x.size();
+    for(int n = 0; n < N; ++n)
+    {
+        X_DFT += x.at(n) * cos( 2*Pi * n * m / N );
+        X_DFT -= x.at(n) * sin( 2*Pi * n * m / N );
+    }
+    return X_DFT;
+}
 
 int main() {
-    double w0 = 2*Pi;
-    double t_start = 0.0;
-    double t_end = 2*Pi/w0 + t_start;
-    double t_step = 0.001;
-    int N = static_cast<int>((t_end - t_start) / t_step);
+    // set parameter for continuous input signal
+    double f0 = 1000.0;         // [Hz]
+    double f1 = 2000.0;         // [Hz]
 
-    std::vector<double> t(N);
-    std::vector<double> f1(N);
-    std::vector<double> f2(N);
-    std::vector<double> f3(N);
-    std::vector<double> f4(N);
+    // calculate discrete input signal
+    double fs = 8000.0;         // [samples/sec]
+    double ts = 1/fs;           // [sec]
+    int N = 8;                  // samples of discrete signal
 
-    // create signals with different form
-    for(size_t i = 0; i < N; ++i)
-    {
-        t.at(i) = ( i == 0 ? t_start : t.at(i-1) + t_step );
-        f1.at(i) = generateTrigonometricFunctionSignal(t.at(i), w0, 1);
-        f2.at(i) = generateTrigonometricFunctionSignal(t.at(i), w0, 3);
-        f3.at(i) = generateTrigonometricFunctionSignal(t.at(i), w0, 5);
-        f4.at(i) = generateTrigonometricFunctionSignal(t.at(i), w0, 100);
+    // The N separate DFT analysis frequencies [Hz]
+    std::vector<double> f_analyses(N);
+    for (int m = 0; m < N; ++m) {
+        f_analyses.at(m) = m * fs / N;
     }
 
-    // Fourier transform
-    int K_garmonic = 10;
-    std::vector<double> ak_vector(K_garmonic);
-    std::vector<double> bk_vector(K_garmonic);
-
-    for (int k = 0; k < K_garmonic; ++k) {
-        ak_vector.at(k) = ak_function(k, w0, t, f4);
-        bk_vector.at(k) = bk_function(k, w0, t, f4);
-    }
-
-    std::vector<double> f_vector(N);
-
-    for (size_t i = 0; i < N; ++i) {
-        for (int k = 0; k < K_garmonic; ++k) {
-            f_vector.at(i) += ak_vector.at(k) * cos(w0 * k * t.at(i)) +
-                                 bk_vector.at(k) * sin(w0 * k * t.at(i));
-        }
+    // The N input samples on which we need to perform DFT
+    std::vector<double> x(N);
+    for (int n = 0; n < N; ++n) {
+        x.at(n) = continuousSignal(n*ts, f0 ,f1);
     }
 
 
-//    plt::plot(t, f4);
-//    plt::plot(t, f2);
-//    plt::plot(t, f3);
-//    plt::plot(t, f4);
-//    plt::plot(t, f_vector);
+    std::vector<double>X_DFT(N);
+    for (int m = 0; m < N; ++m) {
+        X_DFT.at(m) = DFTRectangular(m, x);
+    }
 
-//    plt::plot(ak_vector);
-//    plt::plot(bk_vector);
+
+    TDiscreteTimeDomainSignal TDS(N, fs, continuousTimeSignal);
+    TFrequencyDomainSignalRectangular FDS_REC = forwardDiscreteFourierTransform(TDS);
+    TFrequencyDomainSignalPolar FDS_POL(FDS_REC);
+    plt::plot(FDS_POL.Phase);
+    plt::plot(FDS_POL.UWPhase);
 
     plt::grid(true);
-    plt::legend();
     plt::show();
 }

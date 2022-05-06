@@ -145,5 +145,3 @@ float correlation(const TVector &a, const TVector &b) {
     float r = dotProduct / (magA * magB);
     return r;
 }
-
-

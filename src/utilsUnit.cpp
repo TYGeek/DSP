@@ -1,96 +1,104 @@
 #include "utilsUnit.h"
 #include <cmath>
 
-// convert between (rectangular -> polar) Frequency Domain Signal representation
-TFrequencyDomainSignalPolar rectangularToPolar(TFrequencyDomainSignalRectangular const& rectangular)
-{
-    TFrequencyDomainSignalPolar polar(rectangular.N);
-
-    for (int k = 0; k < polar.N; ++k) {
-        polar.Mag.at(k) = sqrt( pow(rectangular.Re.at(k), 2) +
-                                pow(rectangular.Im.at(k), 2) );
-
-        polar.Phase.at(k) = atan2(rectangular.Im.at(k), rectangular.Re.at(k));
-
-        // correct phase
-        if ( rectangular.Re.at(k) < 0 and rectangular.Im.at(k) < 0 )
-            polar.Phase[k] -= Pi;
-        if ( rectangular.Re.at(k) < 0 and rectangular.Im.at(k) >= 0 )
-            polar.Phase[k] += Pi;
-    }
-
-    return polar;
-}
-
-// convert between polar -> rectangular Frequency Domain Signal representation
-TFrequencyDomainSignalRectangular polarToRectangular(TFrequencyDomainSignalPolar const& polar)
-{
-    TFrequencyDomainSignalRectangular rectangular(polar.N);
-
-    for (int k = 0; k < rectangular.N; ++k) {
-        rectangular.Re.at(k) = polar.Mag.at(k) * cos(polar.Phase.at(k));
-        rectangular.Im.at(k) = polar.Mag.at(k) * sin(polar.Phase.at(k));
-    }
-
-    return rectangular;
-}
-
-// -------------------------------- TFrequencyDomainSignalRectangular -------------------------------------------------
-TFrequencyDomainSignalRectangular::TFrequencyDomainSignalRectangular(size_t N): Re(N), Im(N) { }
-
-TFrequencyDomainSignalRectangular::TFrequencyDomainSignalRectangular(const TFrequencyDomainSignalPolar &polar) {
-    *this = polarToRectangular(polar);
-}
-
-// ----------------------------------- TFrequencyDomainSignalPolar ----------------------------------------------------
-TFrequencyDomainSignalPolar::TFrequencyDomainSignalPolar(size_t N): Mag(N), Phase(N) { }
-
-TFrequencyDomainSignalPolar::TFrequencyDomainSignalPolar(const TFrequencyDomainSignalRectangular &rectangular) {
-    *this = rectangularToPolar(rectangular);
-}
-
-
-// -------------------------------------- TTimeDomainSignal -----------------------------------------------------------
-TTimeDomainSignal::TTimeDomainSignal(size_t N):N(N), t(N), x(N) { }
-
-
-
 // ---------------------------------------- Useful functions ----------------------------------------------------------
-TTimeDomainSignal inverseDiscreteFourierTransform(TFrequencyDomainSignalRectangular const& FDS) {
+TDiscreteTimeDomainSignal inverseDiscreteFourierTransform(TFrequencyDomainSignalRectangular const& fds)
+{
+    return TDiscreteTimeDomainSignal(fds);
+}
 
-    // find the cosine and sine wave amplitude
-    Vec Re(FDS.N);
-    Vec Im(FDS.N);
+TFrequencyDomainSignalRectangular forwardDiscreteFourierTransform(TDiscreteTimeDomainSignal const& tds)
+{
+    return TFrequencyDomainSignalRectangular(tds);
+}
 
-    for (int k = 0; k < FDS.N; ++k) {
-        Re.at(k) = FDS.Re.at(k) / FDS.N;
-        Im.at(k) = -FDS.Im.at(k) / FDS.N;
+// -------------------------------------- TDiscreteTimeDomainSignal ------------------------------------------------
+TDiscreteTimeDomainSignal::TDiscreteTimeDomainSignal(size_t N, double fs, const func &fn):
+N{N}, fs{fs}, ts{1/fs}, t(N), x(N)
+{
+    // generate the N input samples discrete time signal on which we need to perform DFT
+    for (int n = 0; n < N; ++n) {
+        x.at(n) = fn(n*ts);
     }
+}
 
-    TTimeDomainSignal TDS(FDS.N * 2);
+TDiscreteTimeDomainSignal::TDiscreteTimeDomainSignal(const TFrequencyDomainSignalRectangular &fds_rect):
+        N{fds_rect.N}, fs{fds_rect.fs}, ts{fds_rect.ts}, t(N), x(N)
+{
+    // find the cosine and sine wave amplitude
+    Vec Re(fds_rect.N);
+    Vec Im(fds_rect.N);
+    for (int k = 0; k < fds_rect.N; ++k) {
+        Re.at(k) = fds_rect.Re.at(k) / fds_rect.N;
+        Im.at(k) = -fds_rect.Im.at(k) / fds_rect.N;
+    }
+    Re.at(0) = Re.at(0) / 2.0;
+    Re.at(fds_rect.N-1) = Re.at(fds_rect.N-1) / 2.0;
+
 
     // restore time domain signal
-    for (int k = 0; k < FDS.N; ++k) {
-        for (int i = 0; i < TDS.N; ++i) {
-            TDS.x.at(i) += Re.at(k) * cos(2*Pi * k * i / TDS.N);
-            TDS.x.at(i) += Im.at(k) * sin(2*Pi * k * i / TDS.N);
+    for (int k = 0; k < fds_rect.N; ++k) {
+        for (int i = 0; i < N; ++i) {
+            x.at(i) += Re.at(k) * cos( 2*Pi * k * i / N ) ;
+            x.at(i) += Im.at(k) * sin( 2*Pi * k * i / N ) ;
         }
     }
-
-    return TDS;
 }
 
-
-TFrequencyDomainSignalRectangular forwardDiscreteFourierTransform(TTimeDomainSignal const& TDS)
+TFrequencyDomainSignalRectangular::TFrequencyDomainSignalRectangular(TDiscreteTimeDomainSignal const& tds):
+        N{tds.N}, fs{tds.fs}, ts{tds.ts}, Re(N), Im(N), Freq(N)
 {
-    TFrequencyDomainSignalRectangular FDS(TDS.N/2);
+    // The N separate DFT analysis frequencies [Hz]
+    for (int m = 0; m < N; ++m) {
+        Freq.at(m) = m * fs / N;
+    }
 
-    for (int k = 0; k < FDS.N; ++k) {
-        for (int i = 0; i < TDS.N; ++i) {
-            FDS.Re.at(k) += TDS.x.at(i) * cos(2*Pi*k*i / TDS.N);
-            FDS.Im.at(k) -= TDS.x.at(i) * sin(2*Pi*k*i / TDS.N);
+    // determine the DFT of our x(n) input
+    for (int k = 0; k < N; ++k) {
+        for (int n = 0; n < tds.N; ++n) {
+            Re.at(k) += tds.x.at(n) * cos(2 * Pi * k * n / tds.N ) ;
+            Im.at(k) -= tds.x.at(n) * sin(2 * Pi * k * n / tds.N ) ;
         }
     }
 
-    return FDS;
+}
+
+TFrequencyDomainSignalRectangular::TFrequencyDomainSignalRectangular(const TFrequencyDomainSignalPolar &fds_polar):
+        N{fds_polar.N}, fs{fds_polar.fs}, ts{fds_polar.ts}, Re(N), Im(N), Freq(N)
+{
+    // restore Re and Im part
+    for (int k = 0; k < N; ++k) {
+        Re.at(k) = fds_polar.Mag.at(k) * cos(fds_polar.Phase.at(k));
+        Im.at(k) = fds_polar.Mag.at(k) * sin(fds_polar.Phase.at(k));
+    }
+
+    // The N separate DFT analysis frequencies [Hz]
+    for (int m = 0; m < N; ++m) {
+        Freq.at(m) = m * fs / N;
+    }
+
+}
+
+TFrequencyDomainSignalPolar::TFrequencyDomainSignalPolar(const TFrequencyDomainSignalRectangular &fds_rect):
+        N{fds_rect.N}, fs{fds_rect.fs}, ts{fds_rect.ts}, Mag(N), Phase(N), UWPhase(N)
+{
+    for (int k = 0; k < N; ++k) {
+        Mag.at(k) = sqrt( pow(fds_rect.Re.at(k), 2) +
+                             pow(fds_rect.Im.at(k), 2) );
+
+        Phase.at(k) = atan2(fds_rect.Im.at(k) , fds_rect.Re.at(k));
+
+        // correct phase
+        if (fds_rect.Re.at(k) < 0 and fds_rect.Im.at(k) < 0 )
+            Phase[k] -= Pi;
+        if (fds_rect.Re.at(k) < 0 and fds_rect.Im.at(k) >= 0 )
+            Phase[k] += Pi;
+    }
+
+    // phase unwrapping
+    UWPhase.at(0) = 0;
+    for (int k = 1; k < N; ++k) {
+        int c = static_cast<int>( (UWPhase.at(k - 1) - Phase.at(k)) / (2 * Pi) );
+        UWPhase.at(k) = Phase.at(k) + c*2*Pi;
+    }
 }
