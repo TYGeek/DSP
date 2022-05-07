@@ -4,9 +4,9 @@ project(DSP)
 set(CMAKE_CXX_STANDARD 14)
 set(TARGET_NAME DSP)
 set(SOURCES main.cpp
-        src/signalUnit.cpp
         src/vectorUnit.cpp
-        src/utilsUnit.cpp)
+        src/utilsUnit.cpp
+        src/complexNumberUnit.cpp)
 
 add_subdirectory(lib)
 

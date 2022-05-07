@@ -1,6 +1,7 @@
 #include "matplotlibcpp.h"
 #include "utilsUnit.h"
 #include <vector>
+#include "complexNumberUnit.h"
 
 
 namespace plt = matplotlibcpp;
@@ -51,19 +52,32 @@ int main() {
         x.at(n) = continuousSignal(n*ts, f0 ,f1);
     }
 
-
     std::vector<double>X_DFT(N);
     for (int m = 0; m < N; ++m) {
         X_DFT.at(m) = DFTRectangular(m, x);
     }
 
-
     TDiscreteTimeDomainSignal TDS(N, fs, continuousTimeSignal);
     TFrequencyDomainSignalRectangular FDS_REC = forwardDiscreteFourierTransform(TDS);
+//    plt::plot(FDS_REC.Freq, FDS_REC.Re, "sb");
+
     TFrequencyDomainSignalPolar FDS_POL(FDS_REC);
-    plt::plot(FDS_POL.Phase);
-    plt::plot(FDS_POL.UWPhase);
+//    plt::plot(FDS_POL.Freq, FDS_POL.Mag,  "xb:");
+//    plt::plot(FDS_POL.Freq, FDS_POL.Phase, ".r:");
+
+    TDiscreteTimeDomainSignal INV(FDS_REC);
+//    plt::plot( INV.x);
+
+    double Q = 90*RAD;
+    TComplexNumber p(4, 2); // complex number
+    plt::plot({ p.Re }, { p.Im }, "xb");
+    TComplexNumber q(Q);            // rotor
+    TComplexNumber p1 = p*q;
+    plt::plot({ p1.Re }, { p1.Im }, "xr");
 
     plt::grid(true);
     plt::show();
+
+    // s= "<marker><color><line>"
+    //    ".r" - red dots, no connecting line
 }

@@ -59,6 +59,7 @@ struct TFrequencyDomainSignalPolar
     Vec Phase;      // [rad]
     Vec UWPhase;    // unwrapped phase [rad]
     Vec Freq;       // sampling frequency [Hz]
+    Vec Power;      // power spectrum
 };
 
 TDiscreteTimeDomainSignal inverseDiscreteFourierTransform(TFrequencyDomainSignalRectangular const& FDS);
