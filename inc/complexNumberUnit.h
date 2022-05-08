@@ -39,6 +39,7 @@ private:
 
 double calc_Mag(TComplexNumber const& comp);
 double calc_Phase(TComplexNumber const& comp);
+
 TComplexNumber calc_Conjugate(TComplexNumber comp);
 
 #endif //DSP_COMPLEXNUMBERUNIT_H

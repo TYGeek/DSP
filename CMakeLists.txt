@@ -3,10 +3,12 @@ project(DSP)
 
 set(CMAKE_CXX_STANDARD 14)
 set(TARGET_NAME DSP)
+
 set(SOURCES main.cpp
         src/vectorUnit.cpp
         src/utilsUnit.cpp
-        src/complexNumberUnit.cpp)
+        src/complexNumberUnit.cpp
+        src/fourierTransformUnit.cpp)
 
 add_subdirectory(lib)
 
