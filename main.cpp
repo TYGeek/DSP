@@ -3,6 +3,7 @@
 #include "utilsUnit.h"
 #include "fourierTransformUnit.h"
 #include <vector>
+#include "vectorUnit.h"
 
 
 namespace plt = matplotlibcpp;
@@ -10,35 +11,39 @@ namespace plt = matplotlibcpp;
 double continuousTimeSignal(double t)
 {
     // x(t) = sin( 2*Pi * f0 * t ) + 0.5*sin( 2*Pi * f1 * t + 3*Pi/4 );
-    return sin( 2*Pi * 1000 * t ) + 0.5*sin( 2*Pi * 2000 * t + 3*Pi/4 );
+    //     A=1          f=1000hz      A2=0.5         f=2000
+    return 1*sin( 2*Pi * 1000 * t ) + 0.5*sin( 2*Pi * 2000 * t + 3*Pi/4 );
+
 }
+
 
 int main() {
     // calculate discrete input signal
     double fs = 8000.0;         // [samples/sec]
-    double ts = 1/fs;           // [sec]
-    int N = 8;                  // samples of discrete signal
+    int N = fs/1000;             // samples of discrete signal [1]
+    if ( floor( log2(N)) != ceil( log2(N) ) )
+        N = pow(2, ceil( log2(N) ));
 
-    std::unique_ptr<IFourierTransform> transform = std::make_unique<TDiscreteFourierTransform>();
+
     TDiscreteTimeDomainSignal TDS(N, fs, continuousTimeSignal);
 //    plt::plot(TDS.x);
-    TFrequencyDomainSignal FDS = transform->forwardTransform(TDS);
-    plt::plot(FDS.Freq, FDS.get_Mag(), "sb");
+
+    TComplexDomainSignal FDS = TFourierTransform::forwardTransform(TDS);
+//    plt::plot(FDS.Freq, FDS.get_Mag(), "sb");
 //    plt::plot(FDS.Freq, FDS.get_Phase(), ".r");
 
-    TDiscreteTimeDomainSignal INV = transform->inverseTransform(FDS);
-//    plt::plot( INV.x);
+    TDiscreteTimeDomainSignal FDS_INV = TFourierTransform::inverseTransform(FDS);
+//    plt::plot( FDS_INV.x);
 
-    double Q = 90*RAD;
-    TComplexNumber p(4, 2); // complex number
-//    plt::plot({ p.Re }, { p.Im }, "xb");
-    TComplexNumber q(Q);            // rotor
-    TComplexNumber p1 = p*q;
-//    plt::plot({ p1.Re }, { p1.Im }, "xr");
+    TComplexDomainSignal CDS = TFourierTransform::transform(TComplexDomainSignal(TDS), ETransform::forward);
+//    plt::plot(CDS.Freq, CDS.get_Mag(), "sb");
+
+    TComplexDomainSignal CDS_INV = TFourierTransform::transform(CDS, ETransform::inverse);
+//    plt::plot( CDS_INV.get_Re());
 
     plt::grid(true);
     plt::show();
+//    s = "<marker><color><line>" ( s = ".r" - red dots, no connecting line )
 
-    // s= "<marker><color><line>"
-    //    ".r" - red dots, no connecting line
+
 }

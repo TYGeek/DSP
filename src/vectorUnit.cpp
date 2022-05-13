@@ -17,11 +17,6 @@ TVector& TVector::operator=(TVector vec) {
     return *this;
 }
 
-TVector& TVector::operator=(TVector &&vec) noexcept {
-    std::swap(v, vec.v);
-    return *this;
-}
-
 bool TVector::operator==(const TVector &vec) const {
     return std::equal(v.begin(), v.end(), vec.v.begin());
 }

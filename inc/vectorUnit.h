@@ -8,13 +8,15 @@ class TVector
 public:
     // Constructors
     TVector() = default;
+    explicit TVector(std::vector<float> vec);
+
     TVector(TVector const& vec);
     TVector(TVector&& vec) noexcept ;
-    explicit TVector(std::vector<float> vec);
+
 
     // Assigment operation
     TVector& operator=(TVector vec);
-    TVector& operator=(TVector&& vec) noexcept ;
+//    TVector& operator=(TVector&& vec) noexcept ;
 
     // Logical operation
     bool operator==(TVector const& vec) const;

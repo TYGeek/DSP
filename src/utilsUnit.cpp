@@ -1,6 +1,15 @@
 #include "utilsUnit.h"
 #include <cmath>
 
+
+bool isPowerOfTwo(int n)
+{
+    if(n==0)
+        return false;
+
+    return (ceil(log2(n)) == floor(log2(n)));
+}
+
 double generateDiscreteSignal(double n, double ts, double A, double f0, double Q)
 {
     // n - time index integer sequence [1];

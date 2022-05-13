@@ -3,7 +3,7 @@
 
 
 struct TComplexNumber {
-    TComplexNumber()=default;
+    TComplexNumber();
     explicit TComplexNumber(double Q);      // complex rotor
     TComplexNumber(double Re, double Im);   // complex number
     TComplexNumber(TComplexNumber const& comp);
@@ -20,6 +20,9 @@ struct TComplexNumber {
     // Multiplication by scalar
     TComplexNumber operator*(float scalar) const;
     TComplexNumber& operator*=(float scalar);
+    // Divide by scalar
+    TComplexNumber operator/(float scalar) const;
+    TComplexNumber& operator/=(float scalar);
     // Multiplication by complex number (cross product)
     TComplexNumber operator*(TComplexNumber const& comp) const;
     // print complex number
@@ -32,14 +35,21 @@ private:
     friend double calc_Mag(TComplexNumber const& comp);
     // Friend function calculate phase of a complex
     friend double calc_Phase(TComplexNumber const& comp);
-    // // Friend function calculate conjugate of a complex
+    // Friend function calculate power spectrum
+    friend double calc_Power(TComplexNumber const& comp);
+    // Friend function calculate power spectrum in dB
+    friend double calc_Power_dB(TComplexNumber const& comp);
+    // Friend function calculate conjugate of a complex
     friend TComplexNumber calc_Conjugate(TComplexNumber comp);
+    // Friend function calculate multiplication by scalar
+    friend TComplexNumber operator*(double scalar, TComplexNumber const& comp);
 };
 
-
+TComplexNumber operator+(double scalar, TComplexNumber const& comp);
 double calc_Mag(TComplexNumber const& comp);
 double calc_Phase(TComplexNumber const& comp);
-
+double calc_Power(TComplexNumber const& comp);
+double calc_Power_dB(TComplexNumber const& comp);
 TComplexNumber calc_Conjugate(TComplexNumber comp);
 
 #endif //DSP_COMPLEXNUMBERUNIT_H

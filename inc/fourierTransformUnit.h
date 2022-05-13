@@ -3,57 +3,64 @@
 
 #include <vector>
 
-struct TFrequencyDomainSignal;
+
 struct TDiscreteTimeDomainSignal;
 struct TComplexNumber;
+struct TComplexDomainSignal;
 
 using scalarVec = std::vector<double>;
 using complexVec  = std::vector<TComplexNumber>;
 using func = std::function<double(double)>; // x=f(t)
 
-struct IFourierTransform {
-    virtual TFrequencyDomainSignal forwardTransform(TDiscreteTimeDomainSignal const& tds) = 0;
-    virtual TDiscreteTimeDomainSignal inverseTransform(TFrequencyDomainSignal const& fds) = 0;
-    virtual ~IFourierTransform() = default;
+enum class ETransform
+{
+    forward = -1,
+    inverse = 1
 };
 
-struct TDiscreteFourierTransform: IFourierTransform
-{
-    TFrequencyDomainSignal forwardTransform(TDiscreteTimeDomainSignal const& tds) override;
-    TDiscreteTimeDomainSignal inverseTransform(TFrequencyDomainSignal const& fds) override;
-};
+struct TFourierTransform {
 
-struct TFastFourierTransform: IFourierTransform
-{
-    TFrequencyDomainSignal forwardTransform(TDiscreteTimeDomainSignal const& tds) override = 0;
-    TDiscreteTimeDomainSignal inverseTransform(TFrequencyDomainSignal const& fds) override = 0;
+    // function to calculate real fourier transform
+    static TComplexDomainSignal forwardTransform(TDiscreteTimeDomainSignal const& tds);
+    static TDiscreteTimeDomainSignal inverseTransform(TComplexDomainSignal const& fds);
+    /**
+    * The standard DFT is designed to accept complex input sequences,
+    * that is, real inputs have nonzero Re sample values,
+    * and the Im sample values are assumed to be zero.
+    **/
+    static TComplexDomainSignal transform(TComplexDomainSignal const& cds, ETransform direction);
+
 };
 
 
 struct TDiscreteTimeDomainSignal
 {
-    TDiscreteTimeDomainSignal() = default;
+    TDiscreteTimeDomainSignal();
+    TDiscreteTimeDomainSignal(TDiscreteTimeDomainSignal&&) = default;
     // get discrete signal from continuous x=f(t)
     TDiscreteTimeDomainSignal(size_t N, double fs, func const& fn);
 
     size_t N;                   // number of samples
     double fs;                  // sampling rate [Hz] at which original signal was sampled
-    double ts;                  // time sampling [s]
 
     scalarVec t;
     scalarVec x;
 };
 
-struct TFrequencyDomainSignal
+struct TComplexDomainSignal
 {
-    TFrequencyDomainSignal() = default;
+    TComplexDomainSignal();
+    TComplexDomainSignal(TComplexDomainSignal const& cds);
+    explicit TComplexDomainSignal(TDiscreteTimeDomainSignal const& tds);
+    TComplexDomainSignal(TComplexDomainSignal&& cds) noexcept ;
 
     scalarVec get_Mag();
     scalarVec get_Phase();
+    scalarVec get_Re();
+    scalarVec get_Im();
 
     size_t N;           // number of samples [1]
     double fs;          // sampling rate at which original signal was sampled [Hz]
-    double ts;          // 1/fs time sampling [s]
 
     complexVec X;       // complex number (Re + jIm)
     scalarVec Freq;     // sampling frequency [Hz]
